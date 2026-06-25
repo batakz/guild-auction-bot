@@ -138,22 +138,6 @@ client.on("interactionCreate", async (interaction) => {
     // HITUNG MAX MEMBER
     // =========================
 
-    const calculations = [];
-
-    for (const itemName of Object.keys(items)) {
-      const itemQty = items[itemName];
-      const limitQty = limits[itemName];
-
-      // skip item kosong
-      if (itemQty <= 0 || limitQty <= 0) {
-        continue;
-      }
-
-      calculations.push(Math.floor(itemQty / limitQty));
-    }
-
-    const maxMembers = calculations.length > 0 ? Math.min(...calculations) : 0;
-
     const selectedMembers = members;
 
     // =========================
@@ -193,29 +177,29 @@ client.on("interactionCreate", async (interaction) => {
     const results = [];
 
     for (const member of selectedMembers) {
-      const kartuLeft = pages.filter(
-        (p) => p.item === "kartu" && !p.taken,
-      ).length;
-
-      if (kartuLeft < limits.kartu) {
-        break;
-      }
       const memberData = {
         member,
         items: {},
       };
 
       for (const [itemName, limit] of Object.entries(limits)) {
-        const available = pages
-          .filter((p) => p.item === itemName && !p.taken)
-          .slice(0, limit);
+        const available = pages.filter((p) => p.item === itemName && !p.taken);
 
-        available.forEach((a) => {
+        // kalau sisa item tidak cukup untuk limit,
+        // jangan dibagikan lagi
+        if (available.length < limit) {
+          memberData.items[itemName] = [];
+          continue;
+        }
+
+        const allocated = available.slice(0, limit);
+
+        allocated.forEach((a) => {
           a.taken = true;
         });
 
-        memberData.items[itemName] = available;
-        remainingItems[itemName] -= available.length;
+        memberData.items[itemName] = allocated;
+        remainingItems[itemName] -= allocated.length;
       }
 
       results.push(memberData);
